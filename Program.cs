@@ -1,28 +1,41 @@
-﻿using Azure.CloudMachine;
+﻿using Azure.AI.Inference;
+using Azure.AI.Projects;
+using Azure.CloudMachine;
 using Azure.CloudMachine.AIFoundry;
+using Azure.CloudMachine.KeyVault;
 using Azure.CloudMachine.OpenAI;
+using Azure.Search.Documents;
+using Azure.Security.KeyVault.Secrets;
+using OpenAI.Chat;
 
 // ------------- Demo - 1 -----------------------------------
 
 var connectionString = Environment.GetEnvironmentVariable("PROJECT_CONNECTION_STRING");
 AIFoundryClient client = new(connectionString);
 
-var openAIClient = client.GetOpenAIChatClient("gpt-4o-mini");
-var result = openAIClient.CompleteChat("Tell me the most luxurious handbag brand");
-Console.WriteLine(result.AsText());
+ChatClient openAIClient = client.GetOpenAIChatClient("gpt-4o-mini");
+Console.WriteLine(openAIClient.CompleteChat("Tell me the most luxurious handbag brand").AsText());
 
-var agentClient = client.GetAgentsClient();
-var searchClient = client.GetSearchClient("index");
-var chatCompletionsClient = client.GetChatCompletionsClient(); // Inference chat client
-var embeddClient = client.GetEmbeddingsClient(); // Inference embeddings client
+AgentsClient agentClient = client.GetAgentsClient();
+SearchClient searchClient = client.GetSearchClient("index");
+ChatCompletionsClient chatCompletionsClient = client.GetChatCompletionsClient(); // Inference chat client
+EmbeddingsClient embeddingsClient = client.GetEmbeddingsClient(); // Inference embeddings client
+
 
 // -------------- Demo - 2 ----------------------------------
+
 
 ProjectInfrastructure infrastructure = new();
 
 infrastructure.AddFeature(new AIFoundryFeature(connectionString));
+infrastructure.AddFeature(new KeyVaultFeature());
 if (infrastructure.TryExecuteCommand(args)) return;
 
-var projectClient = infrastructure.GetClient();
-var chatClient = projectClient.GetOpenAIChatClient("gpt-4o-mini");
+ProjectClient projectClient = infrastructure.GetClient();
+
+ChatClient chatClient = projectClient.GetOpenAIChatClient("gpt-4o-mini");
 Console.WriteLine(chatClient.CompleteChat("List all the rainbow colors").AsText());
+
+SecretClient secretClient = projectClient.GetKeyVaultSecretsClient();
+KeyVaultSecret secret = secretClient.SetSecret("mysecret", "please don't tell anyone");
+Console.WriteLine($"Shhh it's a secret: {secret.Name}: {secret.Value}");

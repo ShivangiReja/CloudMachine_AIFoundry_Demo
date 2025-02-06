@@ -18,8 +18,8 @@ resource cm_storage 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
   properties: {
     allowBlobPublicAccess: false
-    isHnsEnabled: true
     allowSharedKeyAccess: false
+    isHnsEnabled: true
   }
   identity: {
     type: 'UserAssigned'
@@ -287,9 +287,54 @@ resource openai_cm1afad70ff42d496_chat 'Microsoft.CognitiveServices/accounts/dep
   }
   sku: {
     name: 'Standard'
-    capacity: 120
+    capacity: 10
   }
   parent: openai
+}
+
+resource cm_kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: 'cm1afad70ff42d496'
+  location: location
+  properties: {
+    tenantId: subscription().tenantId
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    accessPolicies: [
+      {
+        tenantId: cm_identity.properties.tenantId
+        objectId: principalId
+        permissions: {
+          secrets: [
+            'get'
+            'set'
+          ]
+        }
+      }
+    ]
+    enabledForDeployment: true
+  }
+}
+
+resource cm_kv_1_KeyVaultAdministrator 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid('cm_kv', 'cm1afad70ff42d496', principalId, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483'))
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483')
+    principalType: 'User'
+  }
+  scope: cm_kv
+}
+
+resource cm_kv_cm_identity_KeyVaultAdministrator 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid('cm_kv', cm_identity.id, subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483'))
+  properties: {
+    principalId: cm_identity.properties.principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483')
+    principalType: 'ServicePrincipal'
+  }
+  scope: cm_kv
 }
 
 output cm_managed_identity_id string = cm_identity.id
