@@ -14,7 +14,7 @@ var connectionString = Environment.GetEnvironmentVariable("PROJECT_CONNECTION_ST
 AIFoundryClient client = new(connectionString);
 
 ChatClient openAIClient = client.GetOpenAIChatClient("gpt-4o-mini");
-Console.WriteLine(openAIClient.CompleteChat("Tell me the most luxurious handbag brand").AsText());
+Console.WriteLine(openAIClient.CompleteChat("Which is the largest continent?").AsText());
 
 AgentsClient agentClient = client.GetAgentsClient();
 SearchClient searchClient = client.GetSearchClient("index");
